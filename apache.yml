@@ -1,0 +1,100 @@
+---
+- name: Install Apache HTTPD
+  hosts: web
+  tasks:
+    - name: install httpd
+      ansible.builtin.dnf:
+        name: 
+          - httpd
+          - mod_ssl
+        state: latest
+    - name: deploy index.html
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+    - name: start httpd
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+    - name: open firewall port 80
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+    - name: open firewall port 443
+      ansible.posix.firewalld:
+        service: https
+        permanent: true
+        state: enabled
+        immediate: true
+
+- name: Install MariaDB
+  hosts: db
+  tasks:
+    - name: install MariaDB Server
+      ansible.builtin.dnf:
+        name: mariadb-server
+        state: latest
+    - name: start MariaDB
+      ansible.builtin.service:
+        name: mariadb
+        state: started
+        enabled: yes
+    - name: open port 3306
+      ansible.posix.firewalld:
+        service: mysql
+        permanent: true
+        state: enabled
+        immediate: true
+
+- name: Edit hosts file
+  hosts: all
+  tasks:
+    - name: add entry for www.camerontech.com
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: 3.138.45.83 www.camerontech.com camerontech.com
+
+- name: Install mlocate
+  hosts: all
+  tasks:
+    - name: install mlocate package
+      ansible.builtin.dnf:
+        name: mlocate
+        state: latest
+    - name: run updatedb immediately
+      ansible.builtin.command:
+        cmd: /usr/bin/updatedb
+        creates: /var/lib/mlocate/mlocate.db
+
+- name: Connect to web servers
+  hosts: localhost
+  become: no
+  tasks:
+    - name: uri connection
+      ansible.builtin.uri:
+        url: http://web-dev.aus.sparksoftcorp.io
+        return_content: yes
+        status_code: 200
+
+- name: Connect to web servers
+  hosts: localhost
+  become: no
+  tasks:
+    - name: uri connection
+      ansible.builtin.uri:
+        url: http://web-qa.aus.sparksoftcorp.io
+        return_content: yes
+        status_code: 200
+
+- name: Connect to web servers
+  hosts: localhost
+  become: no
+  tasks:
+    - name: uri connection
+      ansible.builtin.uri:
+        url: http://web-prod.aus.sparksoftcorp.io
+        return_content: yes
+        status_code: 200

@@ -1,0 +1,54 @@
+---
+- name: Tear Web Environment Down
+  hosts: web
+  tasks:
+    - name: remove httpd and related files
+      ansible.builtin.dnf:
+        name:
+          - httpd
+          - mlocate
+          - mod_ssl
+        autoremove: true
+        state: absent
+    - name: remove firewall rules 80
+      ansible.posix.firewalld:
+        service: http
+        state: disabled
+        immediate: true
+        permanent: true
+    - name: remove firewall rules 443
+      ansible.posix.firewalld:
+        service: https
+        state: disabled
+        immediate: true
+        permanent: true
+
+- name: Tear DB Environment Down
+  hosts: db
+  tasks:
+    - name: remove MariaDB
+      ansible.builtin.dnf:
+        name: 
+          - mariadb-server
+          - mlocate
+        autoremove: true
+        state: absent
+    - name: remove firewall rules 3306
+      ansible.builtin.firewalld:
+        service: mysql
+        state: disabled
+        permanent: true
+        immediate: true
+    - name: remove old database directory (DANGEROUS AF)
+      ansible.builtin.file:
+        path: /var/lib/mysql
+        state: absent
+
+- name: remove line from /etc/hosts
+  hosts: all
+  tasks:
+    - name: remove line
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: 3.138.45.83 www.camerontech.com camerontech.com
+        state: absent
